@@ -1,7 +1,9 @@
-use steamworks::{Client, AppId, LeaderboardDataRequest};
+use std::thread;
 
-fn main() {
-    let (client,single) = Client::init_app(AppId(2737300)).unwrap();
+use steamworks::{AppId, Client, LeaderboardDataRequest};
+
+fn steam_worker() {
+    let (client, single) = Client::init_app(AppId(2737300)).unwrap();
 
     let stats = client.user_stats();
 
@@ -12,24 +14,32 @@ fn main() {
 
         let lb = lb.unwrap().unwrap();
 
-        let stats = client_clone.user_stats();
-
         println!("about dl entries pls");
 
-        stats.download_leaderboard_entries(
+        client_clone.user_stats().download_leaderboard_entries(
             &lb,
             LeaderboardDataRequest::Global,
             0,
-            10,
+            200,
             10,
             |v| {
                 println!("Download: {:?}", v);
-            }
+            },
         );
+
+        println!("made it here?");
     });
 
-    for _ in 0..50 {
+    loop {
         single.run_callbacks();
         ::std::thread::sleep(::std::time::Duration::from_millis(100));
     }
+}
+
+fn main() {
+    thread::spawn(move || {
+        steam_worker();
+    });
+
+    ::std::thread::sleep(::std::time::Duration::from_millis(5000));
 }
