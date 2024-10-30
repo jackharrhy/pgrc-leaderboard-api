@@ -1,0 +1,10 @@
+[project]
+name = "pgrc-leaderboard-api"
+version = "0.1.0"
+description = "Leaderboard API for video game Parking Garage Rally Circuit"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["loguru>=0.7.2", "python-dotenv>=1.0.1", "steam[client]>=1.4.4"]
+
+[tool.uv.sources]
+steam = { git = "https://github.com/solsticegamestudios/steam", rev = "master" }
