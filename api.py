@@ -47,14 +47,12 @@ def get_leaderboard(steam_client: SteamClient, leaderboard_name: str):
         logger.error("Leaderboard not found!")
         return
 
-    logger.info(f"{leaderboard.id} {leaderboard.name} {leaderboard.entry_count}")
+    logger.info(leaderboard)
 
     for entry in leaderboard.get_entries(
         start=0, end=10, data_request=ELeaderboardDataRequest.Global
     ):
-        logger.info(
-            f"{entry.steam_id_user} {entry.score} {entry.global_rank} {entry.details}"
-        )
+        logger.info(entry)
 
 
 def setup_client(client: SteamClient):
