@@ -1,7 +1,7 @@
-from pathlib import Path
 import os
 
 from dotenv import load_dotenv
+from steam.webauth import WebAuth
 from steam.client import SteamClient
 from steam.enums import EResult, ELeaderboardDataRequest
 from loguru import logger
@@ -11,7 +11,7 @@ load_dotenv()
 USERNAME = os.environ["STEAM_USERNAME"]
 PASSWORD = os.environ["STEAM_PASSWORD"]
 
-APP_ID = 239350
+APP_ID = 2737300
 
 client = SteamClient()
 
@@ -19,12 +19,6 @@ client = SteamClient()
 @client.on("error")
 def handle_error(result):
     logger.info("Logon result: %s", repr(result))
-
-
-@client.on("channel_secured")
-def send_login():
-    if client.relogin_available:
-        client.relogin()
 
 
 @client.on("connected")
@@ -41,10 +35,6 @@ def handle_reconnect(delay):
 def handle_disconnect():
     logger.info("Disconnected.")
 
-    if client.relogin_available:
-        logger.info("Reconnecting...")
-        client.reconnect(maxdelay=30)
-
 
 @client.on("logged_on")
 def handle_after_logon():
@@ -57,16 +47,14 @@ def get_leaderboard(steam_client: SteamClient, leaderboard_name: str):
         logger.error("Leaderboard not found!")
         return
 
-    logger.info(
-        leaderboard.id,
-        leaderboard.name,
-        leaderboard.entry_count,
-    )
+    logger.info(f"{leaderboard.id} {leaderboard.name} {leaderboard.entry_count}")
 
     for entry in leaderboard.get_entries(
         start=0, end=10, data_request=ELeaderboardDataRequest.Global
     ):
-        logger.info(entry.steam_id_user, entry.score, entry.global_rank, entry.details)
+        logger.info(
+            f"{entry.steam_id_user} {entry.score} {entry.global_rank} {entry.details}"
+        )
 
 
 def setup_client(client: SteamClient):
@@ -79,15 +67,13 @@ def setup_client(client: SteamClient):
         EResult.AccountLoginDeniedNeedTwoFactor,
         EResult.TwoFactorCodeMismatch,
     ):
-        # TODO the api here changed...
-        # two_factor_code no longer exists, need to auth via WebAuth instead
-        result = client.login(
-            USERNAME, password=PASSWORD, two_factor_code=input("Enter 2FA code: ")
-        )
+        webauth = WebAuth()
+        code = os.popen("steamguard code").read().strip()
+        webauth.login(username=USERNAME, password=PASSWORD, code=code)
+
+        result = client.login(username=USERNAME, access_token=webauth.refresh_token)
     while result in (EResult.AccountLogonDenied, EResult.InvalidLoginAuthCode):
-        result = client.login(
-            USERNAME, password=PASSWORD, auth_code=input("Enter email code: ")
-        )
+        raise RuntimeError("Failed to login, email code auth not implemented")
 
 
 if __name__ == "__main__":
